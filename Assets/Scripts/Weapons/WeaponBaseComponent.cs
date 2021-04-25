@@ -2,75 +2,56 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WeaponBaseComponent : MonoBehaviour
+public abstract class WeaponBaseComponent : MonoBehaviour
 {
-    public GameObject Bullet;
-    public GameObject Muzzle;
+    protected CharaBaseComponent _CharaOwner = null;
 
-    public int PoolSize = 10;
-    public List<GameObject> BulletObjectPool;
 
-    public bool IsAttackable()
+    public void BindOwner( CharaBaseComponent _owner)
     {
-        return IsExpiredCoolTime() && BulletObjectPool.Count > 0;
+        _CharaOwner = _owner;
     }
-       
-    public bool IsExpiredCoolTime()
+
+    public CharaBaseComponent GetOwner() { return _CharaOwner; }
+
+    public virtual bool IsExpiredCoolTime()
     {
         return true;
     }
 
-    public void Attack()
-    {
-        GameObject bullet = GetDeactivatedBullet();
 
-        if ( bullet != null)
+    public virtual CrosshairInfo GetCrosshairInfo()
+    {
+        return new CrosshairInfo()
         {
-            Vector3 initial_location = gameObject.transform.position;
-
-            if(Muzzle != null)
-            {
-                initial_location = Muzzle.transform.position;
-            }
-
-            bullet.SetActive(true);
-            bullet.transform.position = initial_location;
-        }
+            CrossHairType = ECrossHairType.Dot,
+            CrossHairSize = 0.0f,
+            CurrentDeviation = 0.0f
+        };
     }
 
-    public GameObject GetDeactivatedBullet()
+    #region Attack Action
+    protected abstract bool OnAttack( Vector3 attack_location);
+
+    public virtual float GetWeaponDamage() { return 0.0f; }
+
+    public virtual bool IsAttackable()
     {
-        foreach( var bullet in BulletObjectPool)
+        return IsExpiredCoolTime();
+    }
+
+    public bool ExecuteAttack( Vector3 _attack_location)
+    {
+        // 공격이 가능할경우
+        if( IsAttackable())
         {
-            if( bullet.activeSelf == false)
-            {
-                BulletObjectPool.Remove(bullet);
-                return bullet;
-            }
-
+            // 공격을 시작
+            return OnAttack(_attack_location);
         }
 
-        return null;
+        return false;
     }
+    #endregion
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        BulletObjectPool = new List<GameObject>();
 
-        for( int i = 0; i < PoolSize; ++i)
-        {
-            GameObject bullet = Instantiate(Bullet);
-
-            bullet.SetActive(false);
-
-            BulletObjectPool.Add(bullet);
-        }
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }
