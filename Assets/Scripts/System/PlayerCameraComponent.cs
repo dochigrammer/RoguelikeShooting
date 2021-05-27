@@ -65,7 +65,8 @@ public class PlayerCameraComponent : MonoBehaviour
         
         // 무기사용으로 증가한 Recoil + 마우스 컨트롤로 인한 Rotation 값을 계산하여 Pitch값 계산
         var control_rot_x = Mathf.Clamp(_PossessedController.GetControlRotation().x - _PossessedController.GetCurrentCameraRecoil(),
-            -rotation_pitch_limit_angle, -rotation_pitch_limit_angle); // 회전값 제한
+            -rotation_pitch_limit_angle, rotation_pitch_limit_angle); // 회전값 제한
+
 
         // 위로 일정 값으로 결정된 Pitch값과 유저의 Input으로 변한 Yaw값으로 목표 회전값을 정함
         Quaternion target_rotation = Quaternion.Euler(control_rot_x, _PossessedController.GetControlRotation().y, 0.0f);
