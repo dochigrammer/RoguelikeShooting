@@ -45,6 +45,7 @@ public struct GunConfig
 
     // Sounds
     public GameObject FireSound;
+    public GameObject ReloadSound;
 
     // Effects
     public GameObject MuzzleFireEffect;

@@ -6,14 +6,16 @@ public class EnemyManager : MonoBehaviour
 {
     private float CurrentTime = 0.0f;
     private float SpawnIntervalTime = 0.0f;
+    private float GameElapsedTime = 0.0f;
 
-    public float SpawnIntervalMinTime = 0.5f;
-    public float SpawnIntervalMaxTime = 1.5f;
+    public float SpawnIntervalMinTime = 3.0f;
+    public float SpawnIntervalMaxTime = 10.0f;
     public GameObject EnemyGameObject = null;
 
     public int PoolSize = 10;
     public List<GameObject> EnemyObjectPool;
 
+    public GameObject[] DropItems;
     public Transform[] SpawnPoints;
 
     // Start is called before the first frame update
@@ -36,8 +38,9 @@ public class EnemyManager : MonoBehaviour
     void Update()
     {
         CurrentTime += Time.deltaTime;
+        GameElapsedTime += Time.deltaTime;
 
-        if( CurrentTime >= SpawnIntervalTime)
+        if ( CurrentTime >= SpawnIntervalTime)
         {
             CurrentTime = 0.0f;
 
@@ -45,6 +48,14 @@ public class EnemyManager : MonoBehaviour
         }
     }
 
+    public void ReplaceEnemy( GameObject go)
+    {
+        EnemyObjectPool.Add(go);
+        var enemy = go.GetComponent<Enemy>();
+        go.SetActive(false);
+
+        enemy.ResetForRespawn();
+    }
 
     protected GameObject GetDeactivatedEnemy()
     {
@@ -78,7 +89,21 @@ public class EnemyManager : MonoBehaviour
                 enemy.transform.position = transform.position;
             }
         }
+
+        
+        SpawnIntervalTime = Mathf.Max( SpawnIntervalMinTime, (Random.Range(SpawnIntervalMinTime, SpawnIntervalMaxTime) - (GameElapsedTime * 0.03f)));
     }
 
+    public void OnDropItem(Enemy _enemy)
+    {
+        Debug.Log("DropItem");
+        int index = Random.Range(0, DropItems.Length - 1);
 
+        var go = Instantiate(DropItems[index], _enemy.transform.position, new Quaternion());
+
+        Debug.Log(go);
+
+        go.SetActive(true);
+
+    }
 }

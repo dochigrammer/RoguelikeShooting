@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -9,31 +10,47 @@ public class GunBaseComponent : WeaponBaseComponent
     public GameObject Bullet;
     public GameObject Muzzle;
 
+    public int AdditionalDamage = 0;
+
+    public int MaxMagazine = 5;
+    public int MaxBulletCount = 30;
+
     public int PoolSize = 10;
-    public List<GameObject> BulletObjectPool;
+
+    protected int _CurrentMagazine = 5;
+    protected int _BulletCount = 30;
+
+    public int GetBulletCount() { return _BulletCount; }
 
     protected float _CurrentDeviation = 5.0f;
     protected float _CurrentRecoil = 0.0f;
+
+    protected bool _IsReloading = false;
     
     // Start is called before the first frame update
     void Start()
     {
-        BulletObjectPool = new List<GameObject>();
-
-        for (int i = 0; i < PoolSize; ++i)
-        {
-            GameObject bullet = Instantiate(Bullet);
-
-            bullet.SetActive(false);
-
-            BulletObjectPool.Add(bullet);
-        }
+        _CurrentMagazine = MaxMagazine;
+        _BulletCount = MaxBulletCount;
     }
 
     private void Update()
     {
         DriveFireSystem();
     }
+
+    public override EPrepareMotion GetPrepareMotion()
+    {
+        if( _BulletCount > 0)
+        {
+            return EPrepareMotion.NA;
+        }
+        else
+        {
+            return EPrepareMotion.Reload;
+        }
+    }
+
 
     public float GetCurrentRecoil() { return _CurrentRecoil; }
 
@@ -60,6 +77,28 @@ public class GunBaseComponent : WeaponBaseComponent
         }
     }
 
+    public void Reload()
+    {
+        if (!_IsReloading)
+        {
+            _IsReloading = true;
+
+            StartCoroutine("ReloadWait");
+            
+            if( GunConfig.ReloadSound != null)
+            {
+                Instantiate(GunConfig.ReloadSound, gameObject.transform);
+            }
+        }
+    }
+
+    public IEnumerator ReloadWait()
+    {
+        yield return new WaitForSeconds(1.0f);
+
+        _IsReloading = false;
+        _BulletCount = MaxBulletCount;
+    }
 
     public override CrosshairInfo GetCrosshairInfo()
     {
@@ -71,11 +110,11 @@ public class GunBaseComponent : WeaponBaseComponent
         };
     }
 
-    public override float GetWeaponDamage() { return GunConfig.Damage; }
+    public override float GetWeaponDamage() { return GunConfig.Damage + AdditionalDamage; }
 
     public override bool IsAttackable()
     {
-        return IsExpiredCoolTime() && BulletObjectPool.Count > 0;
+        return IsExpiredCoolTime() && _BulletCount > 0 && _IsReloading == false;
     }
 
     public override bool IsExpiredCoolTime()
@@ -96,6 +135,8 @@ public class GunBaseComponent : WeaponBaseComponent
     protected override bool OnAttack(Vector3 attack_location)
     {
         Transform muzzle_transform = GetMuzzleTransform();
+
+        --_BulletCount;
 
         // √—±‚ »≠ø∞ ¿Ã∆Â∆Æ
         Instantiate(GunConfig.MuzzleFireEffect, muzzle_transform);
@@ -130,28 +171,14 @@ public class GunBaseComponent : WeaponBaseComponent
                 {
                     // ¥ÎπÃ¡ˆ∏¶ ¡›¥œ¥Ÿ.
                     chara.OnHit(this);
-
-                    return true;
                 }
+                return true;
             }
         }
 
         return false;
     }
 
-    public GameObject GetDeactivatedBullet()
-    {
-        foreach (var bullet in BulletObjectPool)
-        {
-            if (bullet.activeSelf == false)
-            {
-                BulletObjectPool.Remove(bullet);
-                return bullet;
-            }
 
-        }
-
-        return null;
-    }
 
 }

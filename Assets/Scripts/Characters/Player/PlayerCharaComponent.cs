@@ -1,16 +1,32 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerCharaComponent : CharaBaseComponent
 {
-    
     protected BaseController _Controller = null;
     protected Crosshair _CrosshairUI = null;
+
+    public GameObject ResultPopup = null;
+    public Text BulletsText = null;
 
     protected bool IsContrllable()
     {
         return true;
+    }
+
+
+    public override void OnDied()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        if(ResultPopup != null)
+        {
+            ResultPopup.SetActive(true);
+        }
+        base.OnDied();
     }
 
     protected bool IsAttackable()
@@ -18,10 +34,32 @@ public class PlayerCharaComponent : CharaBaseComponent
         return _Weapon != null && _Weapon.IsAttackable();
     }
 
+    public void DoReload()
+    {
+        var gun = _Weapon as GunBaseComponent;
+
+        if (gun != null)
+        {
+            _Animator.SetTrigger("ReloadAction");
+            gun.Reload();
+        }
+    }
+
     public void DoAttack(Vector3 _attack_location)
     {
+        switch( _Weapon.GetPrepareMotion() )
+        {
+            case EPrepareMotion.NA:
+                break;
+
+            case EPrepareMotion.Reload:
+                DoReload();
+                return;
+        }
+
+
         // 해당무기로 공격 시작
-        if( _Weapon.ExecuteAttack(_attack_location))
+        if ( _Weapon.ExecuteAttack(_attack_location))
         {
             // 공격이 가능할경우 해당 방향으로 회전
             Vector3 look_at_location = _attack_location;
@@ -30,6 +68,29 @@ public class PlayerCharaComponent : CharaBaseComponent
             look_at_location.y = transform.position.y;
 
             transform.LookAt( look_at_location);
+
+            if( _Animator != null)
+            {
+                _Animator.SetTrigger("FireAction");
+            }
+        }
+    }
+
+    public void OnReceiveItem( ItemBase _item)
+    {
+        if( _item.GetType() == typeof(HealingItem))
+        {
+            ScoreManager.Instance.ShowNotify("Heal !!");
+        }
+
+        if (_item.GetType() == typeof(PowerUpItem))
+        {
+            ScoreManager.Instance.ShowNotify("Power Up !!");
+        }
+
+        if (_item.GetType() == typeof(SpeedUpItem))
+        {
+            ScoreManager.Instance.ShowNotify("Speed Up !!");
         }
     }
 
@@ -37,7 +98,9 @@ public class PlayerCharaComponent : CharaBaseComponent
     {
         if( IsContrllable())
         {
-            _CharaController.Move(_move_direction * _CharaStats.MoveVelocity * Time.deltaTime);
+            _CharaController.Move(_move_direction * (_CharaStats.MoveVelocity + _CharaAdditionalStats.IncreasedVelocity )* Time.deltaTime);
+
+            _LastMoveDirection = _move_direction;
         }
     }
 
@@ -56,6 +119,21 @@ public class PlayerCharaComponent : CharaBaseComponent
         InitializeComponents();
 
         base.Start();
+        ScoreManager.Instance.ShowNotify("Game Start!");
+    }
+
+    public override void Update()
+    {
+        base.Update();
+
+        DriveAnimation();
+
+        var gun = _Weapon as GunBaseComponent;
+
+        if ( BulletsText != null && gun != null)
+        {
+            BulletsText.text = string.Format("{0} / {1}", gun.GetBulletCount(), gun.MaxBulletCount);
+        }
     }
 
 
@@ -68,7 +146,6 @@ public class PlayerCharaComponent : CharaBaseComponent
             _CrosshairUI = main_canvas.GetComponentInChildren<Crosshair>();
         }
     }
-
 
     protected override void OnChangeWeapon()
     {

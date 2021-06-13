@@ -7,9 +7,12 @@ public class ScoreManager : Singleton<ScoreManager>
 {
     public Text _CurrentScoreUI;
     public Text _BestScoreUI;
+    public Text _ResultScoreUI;
+    public Text _NotifyUI;
 
     protected int _CurrentScore = 0;
     protected int _BestScore = 0;
+    protected float _NotifyTime = 0.0f;
 
     //protected int _
 
@@ -41,12 +44,25 @@ public class ScoreManager : Singleton<ScoreManager>
 
         UpdateScoreText();
     }
+    public void Update()
+    {
+        if( _NotifyTime > 0.0f )
+        {
+            _NotifyUI.color = new Color(0, 0, 0, (_NotifyTime + 0.01f / 1.5f));
+            _NotifyTime -= Time.deltaTime;
+
+            if( _NotifyTime <= 0.0f )
+            {
+                _NotifyUI.gameObject.SetActive(false);
+            }
+        }
+    }
 
     protected void UpdateScoreText()
     {
-        _BestScoreUI.text = "최고 점수 : " + _BestScore;
-        _CurrentScoreUI.text = "현재 점수 : " + _CurrentScore;
-
+        _BestScoreUI.text = "Best Score :" + _BestScore;
+        _CurrentScoreUI.text = "Current Score : " + _CurrentScore;
+        _ResultScoreUI.text = _CurrentScore.ToString();
     }
 
     public void Clear()
@@ -59,5 +75,14 @@ public class ScoreManager : Singleton<ScoreManager>
         Score += _increased_score;
 
         UpdateScoreText();
+    }
+
+
+    public void ShowNotify(string _text)
+    {
+        _NotifyUI.text = _text;
+        _NotifyUI.gameObject.SetActive(true);
+
+        _NotifyTime = 1.5f;
     }
 }
