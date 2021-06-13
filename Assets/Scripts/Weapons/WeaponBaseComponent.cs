@@ -7,6 +7,9 @@ public abstract class WeaponBaseComponent : MonoBehaviour
     protected CharaBaseComponent _CharaOwner = null;
 
 
+
+    public virtual EPrepareMotion GetPrepareMotion() { return EPrepareMotion.NA; }
+
     public void BindOwner( CharaBaseComponent _owner)
     {
         _CharaOwner = _owner;

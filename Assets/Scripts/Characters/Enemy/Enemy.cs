@@ -15,6 +15,7 @@ public class Enemy : CharaBaseComponent
     protected float _DecideNewActionRemainTime = 0.0f;
     protected Vector3 _GoalLocation = Vector3.zero;
     protected NavMeshAgent _NavAgent;
+    protected EnemyManager _EnemyManager;
 
     public GameObject _ExplosionFactory;
 
@@ -27,6 +28,10 @@ public class Enemy : CharaBaseComponent
 
         _NavAgent.updatePosition = false;
         _NavAgent.updateRotation = true;
+
+
+        GameObject go_enemy_manager = GameObject.Find("EnemyManager");
+        _EnemyManager = go_enemy_manager.GetComponent<EnemyManager>();
     }
 
     public override void Update()
@@ -45,14 +50,20 @@ public class Enemy : CharaBaseComponent
         {
             _PerceivedPlayer = _weapon.GetOwner();
             ChangeState(EEnemyState.Idle);
-            Debug.Log("OnHit");
         }
     }
 
     public override void OnDied()
     {
         ScoreManager.Instance.AddScore(50);
-        base.OnDied();
+
+        Debug.Log("Died");
+        if( Random.Range(0, 4) <= 1)
+        {
+            _EnemyManager.OnDropItem(this);
+        }
+
+        _EnemyManager.ReplaceEnemy(gameObject);
     }
 
 
@@ -180,12 +191,16 @@ public class Enemy : CharaBaseComponent
 
     protected void DriveAttack()
     {
-        Debug.Log("Attack");
         if (CanExecuteNewAction())
         {
             Vector3 random_deviation = new Vector3( Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f) );
             
             GetWeaponComponent().ExecuteAttack(_PerceivedPlayer.transform.position + Vector3.up + random_deviation);
+
+            if (_Animator != null)
+            {
+                _Animator.SetTrigger("FireAction");
+            }
 
             ChangeState(EEnemyState.Idle);
 
@@ -241,7 +256,13 @@ public class Enemy : CharaBaseComponent
         {
             _CharaController.Move(_NavAgent.velocity * Time.deltaTime);
 
+            _LastMoveDirection = _NavAgent.velocity;
+
             transform.position = _NavAgent.nextPosition;
+        }
+        else
+        {
+            _LastMoveDirection = Vector3.zero;
         }
     }
 
@@ -260,40 +281,4 @@ public class Enemy : CharaBaseComponent
         return target_location + new Vector3(Random.Range(-proper_distance_half, proper_distance_half), 0.0f, Random.Range(-proper_distance_half, proper_distance_half));
     }
 
-    private void OnTriggerEnter(Collider other)
-    {
-        GameObject explosion = Instantiate(_ExplosionFactory);
-
-        if( explosion == null)
-        {
-            Debug.LogWarning("explosion Instantiate Fail");
-        }
-
-        if( explosion != null)
-        {
-            explosion.transform.position = transform.position;
-        }
-
-        if( other.gameObject.name.Contains("Bullet"))
-        {
-            other.gameObject.SetActive(false);
-
-            GunBaseComponent player_gun = GameObject.Find("Player").GetComponent<GunBaseComponent>();
-
-            player_gun.BulletObjectPool.Add(other.gameObject);
-        }
-        else
-        {
-            Destroy(other.gameObject);
-        }
-
-        gameObject.SetActive(false);
-
-        GameObject go_enemy_manager = GameObject.Find("EnemyManager");
-        var enemy_manager = go_enemy_manager.GetComponent<EnemyManager>();
-
-        enemy_manager.EnemyObjectPool.Add(other.gameObject);
-
-        ScoreManager.Instance.AddScore(1);
-    }
 }

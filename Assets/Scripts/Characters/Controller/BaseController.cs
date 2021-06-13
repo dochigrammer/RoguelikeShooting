@@ -138,5 +138,10 @@ public class BaseController : MonoBehaviour
                 _PlayerChara.DoAttack(attack_location);
             }
         }
+
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            _PlayerChara.DoReload();
+        }
     }
 }

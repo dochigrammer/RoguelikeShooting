@@ -6,7 +6,6 @@ public class BattleGameMnager : Singleton<BattleGameMnager>
 {
     protected List<PlayerCharaComponent> _PlayerCharas;
 
-
     public override void OnInitialize()
     {
         ScoreManager.Instance.Clear();
